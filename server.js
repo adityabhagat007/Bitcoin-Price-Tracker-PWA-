@@ -2,6 +2,7 @@ const express= require("express");
 const bodyParser =require("body-parser");
 const request= require("request");
 const path = require('path');
+const axios = require('axios');
 const PORT = process.env.PORT||3000
 
 
@@ -35,7 +36,7 @@ app.get("/",function(req,res){
 
 
 
-app.post("/",function(req,res){
+app.post("/insert",function(req,res){
     var country=(req.body.crypto);
     if(country!== "USD" && 
        country!== "AUD" &&
@@ -63,23 +64,29 @@ app.post("/",function(req,res){
            return res.render('index', {time:"",value:"", currency:"", error:"Waring don't try to manipulate Code"})
     }
     var baseLink="https://api.coindesk.com/v1/bpi/currentprice/";
-    var finalURL= baseLink+country+".json";
-    request(finalURL,function(error,response,body){
-        var data=JSON.parse(body);
-        var time=data.time.updated; 
-        var value=data.bpi[country].rate_float;
-        res.render('index',{
-            time:time,
-            value:value,
-            currency:country,
-            error:"",
-        });
-    });
+    var finalURL= baseLink+country;
+    let time
+    let value
+    let code
+    axios.get(finalURL)
+    .then((response)=>{
+       time = response.data.time.updated
+       value = response.data.bpi[country].rate;
+       code = response.data.bpi[country].code;
+       console.log(time,value,code);
+       return res.render('index',{time:time ,value:value, currency:code, error:""})
+    })
+    .catch((error)=>{
+      console.log(error);
+      res.render('index',{time:"",value:"", currency:"", error:"Something went wrong"})
+    })
+
+    
 });
 
-// app.use('*',(req,res)=>{
-//     res.send("<h1>404 :)</h1>")
-// })
+app.use('*',(req,res)=>{
+    res.send("<h1>404 :)</h1>")
+})
 
 app.listen(PORT,function(){
     console.log("server is running on port 3000");
